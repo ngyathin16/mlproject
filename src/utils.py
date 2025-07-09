@@ -5,6 +5,7 @@ import pandas as pd
 from src.exception import CustomException
 import dill
 from sklearn.metrics import r2_score
+from sklearn.model_selection import RandomizedSearchCV
 
 def save_object(file_path,obj):
     try:
@@ -23,7 +24,16 @@ def evaluate_models(X_train,y_train,X_test,y_test,models,param):
             model = list(models.values())[i]
             para = param[list(models.keys())[i]]
 
-            model.set_params(**para)
+            # Use RandomizedSearchCV for more robust hyperparameter tuning
+            if para:  # Only do hyperparameter tuning if parameters are provided
+                rs = RandomizedSearchCV(model, para, cv=3, n_iter=10, random_state=42, n_jobs=-1)
+                rs.fit(X_train,y_train)
+                model.set_params(**rs.best_params_)
+            else:
+                # For models without parameters (like Linear Regression), just fit directly
+                pass
+
+            # The model is already set with best parameters from RandomizedSearchCV if parameters were provided
             model.fit(X_train,y_train)
 
             y_train_pred = model.predict(X_train)
